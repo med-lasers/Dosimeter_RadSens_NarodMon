@@ -6,4 +6,4 @@ Hardware
 * TMB12A05 buzzer, "+" is connected directly to GPIO_27, "-" is connected GND
 
 Software
-* Input your SSID, Password and MAC address
+* Input your SSID (line 10), Password (line 11) and MAC address without dashes (line 429)
