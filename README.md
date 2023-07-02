@@ -1,5 +1,5 @@
 # Dosimeter
-Hardware
+Hardware:
 * RadSens Geiger–Müller tube controller
 * SBM20 Geiger–Müller tube counter
 * LILYGO TTGO T-display ESP32 controller
