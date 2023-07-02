@@ -14,7 +14,8 @@ Schematic:
 * GPIO21 - SDA to RadSens
 * GPIO22 - SCL to RadSens
 * GPIO17 - pulse input from RadSens
-* GPIO12 - output to cut "GND" from RadSend in sleep mode via open collector 2N2222;
+* GPIO12 - output to cut "GND" from RadSens in sleep mode via open collector key
+  (as an alternative RadSens "GND" could be connected directly to Q3 collector, pls. see LILYGO TTGO T-display ESP32 schematic diadram)
 * GPIO27 - buzzer;
 
   Technical data:
