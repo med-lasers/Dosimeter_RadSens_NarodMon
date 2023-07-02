@@ -68,7 +68,7 @@ void IRAM_ATTR buzzer() {peep=1;}
 
 void setup() {
   pinMode(0, INPUT); // pushbutton II
-  pinMode(17, INPUT); // pulse input from RadSens, not used
+  pinMode(17, INPUT); // pulse input from RadSens
   pinMode(27, OUTPUT); // buzzer
   pinMode(35, INPUT); // pushbutton I
   pinMode(12, OUTPUT); // cut RadSens "GND" in sleep mode
