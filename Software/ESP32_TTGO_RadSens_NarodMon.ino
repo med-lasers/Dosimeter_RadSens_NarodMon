@@ -65,13 +65,13 @@ float VoltageCorrectionSpan=1.0000;
 TFT_eSPI tft = TFT_eSPI(135, 240);
 CG_RadSens radSens(RS_DEFAULT_I2C_ADDRESS);
 
-void setup() {
-  pinMode(0, INPUT);
+void setup(){
+  pinMode(0, INPUT); // pushbutton II
   pinMode(17, INPUT); // pulse input from RadSens, not used
-  pinMode(35, INPUT);
-  pinMode(12, OUTPUT);
-  pinMode(14, OUTPUT);
-  pinMode(27, OUTPUT);
+  pinMode(35, INPUT); // pushbutton I
+  pinMode(12, OUTPUT); // cut RadSens "GNG" in sleep mode
+  pinMode(14, OUTPUT); // cut power supply in sleep mode
+  pinMode(27, OUTPUT); // buzzer
 
   digitalWrite(12, HIGH);
   digitalWrite(14, HIGH);
