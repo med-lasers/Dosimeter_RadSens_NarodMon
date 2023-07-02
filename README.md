@@ -5,6 +5,6 @@ Hardware:
 * LILYGO TTGO T-display ESP32 controller
 * TMB12A05 buzzer
 
-Software
+Software:
 * Arduino IDE
 * Esptouch (mobile app for Wi-Fi credentials configuration)
