@@ -4,7 +4,7 @@
 #include "CG_RadSens.h"
 #include "clipart.h"
 
-const char* firmwareVersion="4.0";
+const char* firmwareVersion="4.1";
 
 String ssid;
 String password;
@@ -40,10 +40,11 @@ bool WiFiSet;
 bool WiFiConfigured;
 bool modeChanged=1;
 bool settingChanged;
-bool buzzerOn=1;
 bool readingUnitSelector;
 bool screenSaver;
 bool screenSaverChanged;
+bool buzzerOn=1;
+volatile bool peep;
 
 uint8_t counter;
 uint8_t focusSetting;
@@ -52,8 +53,6 @@ uint8_t WiFiConnectionStatus; //0-NOT DEFINED; 1-FAULT; 2-POOR; 3-GOOD; 4-EXCELL
 uint8_t clientConnectionStatus; //0-NOT DEFINED; 1-FAULT; 2-GOT RESPONCE; 3-OK 
 uint16_t sensitivity=105;
 uint16_t readingColor;
-uint32_t lastNumberOfPulses;
-uint32_t currentNumberOfPulses;
 
 float radD;
 float radS;
@@ -65,13 +64,17 @@ float VoltageCorrectionSpan=1.0000;
 TFT_eSPI tft = TFT_eSPI(135, 240);
 CG_RadSens radSens(RS_DEFAULT_I2C_ADDRESS);
 
-void setup(){
+void IRAM_ATTR buzzer() {peep=1;}
+
+void setup() {
   pinMode(0, INPUT); // pushbutton II
   pinMode(17, INPUT); // pulse input from RadSens, not used
-  pinMode(35, INPUT); // pushbutton I
-  pinMode(12, OUTPUT); // cut RadSens "GNG" in sleep mode
-  pinMode(14, OUTPUT); // cut power supply in sleep mode
   pinMode(27, OUTPUT); // buzzer
+  pinMode(35, INPUT); // pushbutton I
+  pinMode(12, OUTPUT); // cut RadSens "GND" in sleep mode
+  pinMode(14, OUTPUT); // cut power supply in sleep mode
+
+  attachInterrupt(17, buzzer, FALLING);
 
   digitalWrite(12, HIGH);
   digitalWrite(14, HIGH);
@@ -232,17 +235,15 @@ void loop() {
   }
 
   if (mode==0){
-    if (modeChanged){
+    if(modeChanged){
       modeChanged=0;
       nextScreenUpdate=0;
       nextBatteryIconUpdate=0;
-      lastNumberOfPulses=radSens.getNumberOfPulses();
       tft.fillScreen(0x0000);
     }
     if(millis()>=nextScreenUpdate){
       nextScreenUpdate=millis()+1000;
       radD=radSens.getRadIntensyDynamic();
-      if (buzzerOn) buzzer();
       if (radD<20) readingColor=0x07E0;
       if (radD>=20) readingColor=0xFFE0;
       if (radD>=40) readingColor=0xFDA0;
@@ -269,7 +270,6 @@ void loop() {
       modeChanged=0;
       nextScreenUpdate=0;
       nextBatteryIconUpdate=0;
-      lastNumberOfPulses=radSens.getNumberOfPulses();
       tft.fillScreen(0x0000);
       tft.setTextColor(0xC618);
       tft.drawString("Dose", 5, 8, 4);
@@ -280,7 +280,6 @@ void loop() {
     if(millis()>=nextScreenUpdate){
       nextScreenUpdate=millis()+1000;
       radD=radSens.getRadIntensyDynamic();
-      if (buzzerOn) buzzer();
       dose=dose+radD/3600;
       if (radD<20) readingColor=0x07E0;
       if (radD>=20) readingColor=0xFFE0;
@@ -502,7 +501,6 @@ void loop() {
       if (buzzerOn) tft.drawString("on", 100, 40, 4);
       else tft.drawString("off", 100, 40, 4);
       tft.drawNumber(sensitivity, 140, 72, 4);
-     // tft.drawString("keep", 84, 104, 4);
     }
     if (settingChanged==1){
       settingChanged=0;
@@ -631,6 +629,15 @@ void loop() {
       tft.drawString(macAddress, 44, 112, 2);
     }
   }
+
+  if(peep) {
+    peep=0;
+    if(buzzerOn&(mode==0)|(mode==1)){
+      digitalWrite(27, HIGH);
+      delay(20);
+      digitalWrite(27, LOW);
+    }
+  }
 }
 
 void writeStringToFlash(const char* toStore, int startAddr) {
@@ -647,18 +654,4 @@ String readStringFromFlash(int startAddr){
     in[counter] = EEPROM.read(startAddr + counter);
   }
   return String(in);
-}
-
-void buzzer(){
-{
-  currentNumberOfPulses=radSens.getNumberOfPulses();
-  while (currentNumberOfPulses>lastNumberOfPulses){
-    digitalWrite(27, HIGH);
-      delay(50);
-      digitalWrite(27, LOW);
-      delay(50);
-      lastNumberOfPulses++;
-      if(millis()>=nextScreenUpdate) break;
-    }
-  }
 }
