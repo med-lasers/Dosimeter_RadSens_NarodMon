@@ -1,5 +1,5 @@
 # Dosimeter
-Dosimeter has 3 operation modes: "search", "dose" and "narodmon"
+Dosimeter has 3 operating modes: "search", "dose" and "narodmon"
 
 Hardware:
 * RadSens Geiger–Müller tube Arduino controller
