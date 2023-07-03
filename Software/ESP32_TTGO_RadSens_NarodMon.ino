@@ -4,7 +4,7 @@
 #include "CG_RadSens.h"
 #include "clipart.h"
 
-const char* firmwareVersion="4.1";
+const char* firmwareVersion="3.2";
 
 String ssid;
 String password;
