@@ -632,7 +632,7 @@ void loop() {
 
   if(peep) {
     peep=0;
-    if(buzzerOn&(mode==0)|(mode==1)){
+    if(buzzerOn&((mode==0)|(mode==1))){
       digitalWrite(27, HIGH);
       delay(20);
       digitalWrite(27, LOW);
