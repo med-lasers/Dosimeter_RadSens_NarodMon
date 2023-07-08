@@ -22,6 +22,6 @@ Schematic:
 
   Technical data:
 * measuring range: 0-144000 uR/h
-* dimensions: 180x32x21.5
+* dimensions: 180x32x21.5 mm
 * deep sleep current 0.19 mA
 * ON current 140 mA
