@@ -4,7 +4,7 @@
 #include "CG_RadSens.h"
 #include "clipart.h"
 
-const char* firmwareVersion="3.2";
+const char* firmwareVersion="3.3";
 
 String ssid;
 String password;
@@ -68,7 +68,7 @@ void IRAM_ATTR buzzer() {peep=1;}
 
 void setup() {
   pinMode(0, INPUT); // pushbutton II
-  pinMode(17, INPUT); // pulse input from RadSens
+  pinMode(17, INPUT_PULLUP); // pulse input from RadSens
   pinMode(27, OUTPUT); // buzzer
   pinMode(35, INPUT); // pushbutton I
   pinMode(12, OUTPUT); // cut RadSens "GND" in sleep mode
@@ -109,7 +109,7 @@ void setup() {
   }
   radSens.setSensitivity(105);
   radSens.setHVGeneratorState(1);
-  radSens.setLedState(0);
+  radSens.setLedState(1);
 
   delay(2000);
 }
