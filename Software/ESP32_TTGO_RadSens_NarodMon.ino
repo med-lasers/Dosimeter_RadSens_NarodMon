@@ -4,7 +4,7 @@
 #include "CG_RadSens.h"
 #include "clipart.h"
 
-const char* firmwareVersion="3.3";
+const char* firmwareVersion="3.5";
 
 String ssid;
 String password;
@@ -44,6 +44,7 @@ bool readingUnitSelector;
 bool screenSaver;
 bool screenSaverChanged;
 bool buzzerOn=1;
+bool radSMultiplicator;
 volatile bool peep;
 
 uint8_t counter;
@@ -51,8 +52,9 @@ uint8_t focusSetting;
 uint8_t mode; //0-SEARCH MODE; 1-TRANSFER MODE; 2-SETTINGS; 3-INFO
 uint8_t WiFiConnectionStatus; //0-NOT DEFINED; 1-FAULT; 2-POOR; 3-GOOD; 4-EXCELLENT
 uint8_t clientConnectionStatus; //0-NOT DEFINED; 1-FAULT; 2-GOT RESPONCE; 3-OK 
-uint16_t sensitivity=105;
-uint16_t readingColor;
+uint8_t sensitivity=105;
+uint16_t radReadingColor;
+uint16_t doseReadingColor;
 
 float radD;
 float radS;
@@ -95,6 +97,11 @@ void setup() {
     ssid = readStringFromFlash(0);
     password = readStringFromFlash(40);
     macAddress = readStringFromFlash(60);
+    if((EEPROM.read(80)<85)|(EEPROM.read(80)>125)) {
+    EEPROM.write(80, sensitivity);
+    EEPROM.commit();
+    }
+    sensitivity=EEPROM.read(80);
   }
 
   if (ssid.length()!=0) WiFiConfigured=1;
@@ -107,7 +114,7 @@ void setup() {
   tft.setTextColor(0xF800);
   tft.drawString("Sensor wiring error!", 55, 93, 2);
   }
-  radSens.setSensitivity(105);
+  radSens.setSensitivity(sensitivity);
   radSens.setHVGeneratorState(1);
   radSens.setLedState(1);
 
@@ -244,32 +251,45 @@ void loop() {
     if(millis()>=nextScreenUpdate){
       nextScreenUpdate=millis()+1000;
       radD=radSens.getRadIntensyDynamic();
-      if (radD<20) readingColor=0x07E0;
-      if (radD>=20) readingColor=0xFFE0;
-      if (radD>=40) readingColor=0xFDA0;
-      if (radD>=60) readingColor=0xF800;
-      tft.setTextColor(readingColor, 0x0000, 0);
-      if(readingUnitSelector){
-        radD=radD/100;
-        tft.drawString("uZv", 196, 51, 4);
+      if (radD<20) radReadingColor=0x07E0;
+      if (radD>=20) radReadingColor=0xFFE0;
+      if (radD>=40) radReadingColor=0xFDA0;
+      if (radD>=60) radReadingColor=0xF800;
+      tft.setTextColor(radReadingColor, 0x0000, 0);
+      if(readingUnitSelector) {
+        if(radD>=99999.5) {
+          radD=radD/100000;
+          tft.drawString("mZv", 190, 51, 4);
+        }
+        else {
+          radD=radD/100;
+          tft.drawString(" uZv ", 190, 51, 4);
+        }
       }
-      else tft.drawString(" uR ", 196, 51, 4);
-      tft.drawWideLine(199, 77, 235, 77, 2, readingColor, readingColor);
-      tft.drawString("h", 212, 84, 4);
-      if (radD<9.99) tft.drawFloat(radD, 2, 1, 30, 8);
-      if ((radD>=9.99)&(radD<99.95)) tft.drawFloat(radD, 1, 1, 30, 8);
+      else {
+        if(radD>=999.5) {
+          radD=radD/1000;
+          tft.drawString(" mR ", 190, 51, 4);
+        }
+        else tft.drawString("  uR ", 190, 51, 4);
+      }
+      tft.drawWideLine(198, 77, 234, 77, 2, radReadingColor, radReadingColor);
+      tft.drawString("h", 210, 84, 4);
+      if (radD<9.99) tft.drawFloat(radD, 2, -2, 30, 8);
+      if ((radD>=9.99)&(radD<99.95)) tft.drawFloat(radD, 1, -2, 30, 8);
       if (radD>=99.95){
-        tft.drawNumber(radD, 29, 30, 8);
-        tft.fillRect(1, 30, 28, 75, 0x0000);
+        tft.drawNumber(radD, 22, 30, 8);
+        tft.fillRect(0, 30, 22, 75, 0x0000);
       }
     }
   }
 
-  if (mode==1){
-    if (modeChanged){
+  if (mode==1) {
+    if (modeChanged) {
       modeChanged=0;
       nextScreenUpdate=0;
       nextBatteryIconUpdate=0;
+      dose=0;
       tft.fillScreen(0x0000);
       tft.setTextColor(0xC618);
       tft.drawString("Dose", 5, 8, 4);
@@ -277,37 +297,80 @@ void loop() {
       tft.pushImage(5, 40,  37, 36, clipart);
       tft.pushImage(5, 90,  37, 36, clipart);
     }
-    if(millis()>=nextScreenUpdate){
+    if(millis()>=nextScreenUpdate) {
       nextScreenUpdate=millis()+1000;
       radD=radSens.getRadIntensyDynamic();
       dose=dose+radD/3600;
-      if (radD<20) readingColor=0x07E0;
-      if (radD>=20) readingColor=0xFFE0;
-      if (radD>=40) readingColor=0xFDA0;
-      if (radD>=60) readingColor=0xF800;
-      tft.setTextColor(readingColor, 0x0000, 0);
-      if(readingUnitSelector){
-        tft.drawString("uZv/h", 166, 57, 4);
-        tft.drawString("uZv", 176, 107, 4);
-        radD=radD/100;
-        dosePrint=dose/100;
-      }
-      else{
-        tft.drawString(" uR/h ", 166, 57, 4);
-        tft.drawString(" uR ", 176, 107, 4);
-        dosePrint=dose;
-      }
 
+      if (radD<20) radReadingColor=0x07E0;
+      if (radD>=20) radReadingColor=0xFFE0;
+      if (radD>=40) radReadingColor=0xFDA0;
+      if (radD>=60) radReadingColor=0xF800;
+
+      if (dose<10000000) doseReadingColor=0x07E0;   //0,10Zv
+      if (dose>=10000000) doseReadingColor=0xFFE0;  //0,10Zv
+      if (dose>=25000000) doseReadingColor=0xFDA0;  //0,25Zv
+      if (dose>=100000000) doseReadingColor=0xF800; //1,00Zv
+      
+      if(readingUnitSelector) {
+        tft.setTextColor(radReadingColor, 0x0000, 0);
+        if(radD>=99999.5) {
+          radD=radD/100000;
+          tft.drawString("mZv/h", 166, 57, 4);
+        }
+        else {
+          radD=radD/100;
+          tft.drawString("uZv/h  ", 166, 57, 4);
+        }
+        tft.setTextColor(doseReadingColor, 0x0000, 0);
+        if(dose<99999.5) {
+          dosePrint=dose/100;
+          tft.drawString("uZv", 176, 107, 4);
+        }
+        if((dose>=99999.5)&(dose<99999999.5)) {
+          dosePrint=dose/100000;
+          tft.drawString("mZv", 176, 107, 4);
+        }
+        if(dose>=99999999.5) {
+          dosePrint=dose/100000000;
+          tft.drawString(" Zv    ", 176, 107, 4);         
+        }
+      }
+      else {
+        tft.setTextColor(radReadingColor, 0x0000, 0);
+        if(radD>=999.5) {
+          radD=radD/1000;
+          tft.drawString(" mR/h ", 166, 57, 4);
+        }
+        else {
+          tft.drawString ("  uR/h ", 166, 57, 4);
+        }
+        tft.setTextColor(doseReadingColor, 0x0000, 0);
+        if(dose<999.5) {
+          dosePrint=dose;
+          tft.drawString(" uR ", 176, 107, 4);
+        }
+        if((dose>=999.5)&(dose<999999.5)) {
+          dosePrint=dose/1000;
+          tft.drawString("mR  ", 176, 107, 4);
+        }
+        if(dose>=999999.5) {
+          dosePrint=dose/1000000;
+          tft.drawString("  R     ", 176, 107, 4);
+        }
+      }
+      tft.setTextColor(radReadingColor, 0x0000, 0);
       if (radD<9.99) tft.drawFloat(radD, 2, 60, 40, 6);
       if ((radD>=9.99)&(radD<99.95)) tft.drawFloat(radD, 1, 60, 40, 6);
-      if (radD>=99.95){
+      if (radD>=99.95) {
         tft.drawNumber(radD, 73, 40, 6);
         tft.fillRect(60, 40, 13, 37, 0x0000);
       }
-
-      if (dose<9.99) tft.drawFloat(dosePrint, 2, 60, 90, 6);
-      if ((dose>=9.99)&(dose<99.95)) tft.drawFloat(dosePrint, 1, 60, 90, 6);
-      if (dose>=99.95){
+      Serial.println(dosePrint);
+      tft.setTextColor(doseReadingColor, 0x0000, 0);
+      if (dosePrint<9.99) tft.drawFloat(dosePrint, 2, 60, 90, 6);
+      if ((dosePrint>=9.99)&(dosePrint<99.95)) tft.drawFloat(dosePrint, 1, 60, 90, 6);
+      if (dosePrint>=99.95){
       tft.drawNumber(dosePrint, 73, 90, 6);
       tft.fillRect(60, 90, 13, 37, 0x0000);
       }
@@ -349,15 +412,28 @@ void loop() {
         if(millis()>=screenSaverTimer)screenSaver=1;
         radS=radSens.getRadIntensyStatic();
         if(!screenSaver){
-          if (radS<20) readingColor=0x07E0;
-          if (radS>=20) readingColor=0xFFE0;
-          if (radS>=40) readingColor=0xFDA0;
-          if (radS>=60) readingColor=0xF800;
-          tft.setTextColor(readingColor, 0x0000, 0);
+          if (radS<20) radReadingColor=0x07E0;
+          if (radS>=20) radReadingColor=0xFFE0;
+          if (radS>=40) radReadingColor=0xFDA0;
+          if (radS>=60) radReadingColor=0xF800;
+          tft.setTextColor(radReadingColor, 0x0000, 0);
+         
+          if(radS>=999.5) {
+            radS=radS/1000;
+            radSMultiplicator=1;
+            tft.drawString("mR/h", 174, 66, 4);
+          }
+          else {
+            radSMultiplicator=0;
+            tft.drawString("uR/h", 182, 66, 4);
+            tft.fillRect(174, 66, 8, 20, 0x0000);
+          }
           if (radS<9.99) tft.drawFloat(radS, 2, 66, 49, 6);
           if ((radS>=9.99)&(radS<99.95)) tft.drawFloat(radS, 1, 66, 49, 6);
-          if (radS>=99.95) tft.drawNumber(radS, 66, 49, 6);
-          tft.drawString("uR/h", 182, 66, 4);
+          if (radS>=99.95) {
+            tft.drawNumber(radS, 80, 49, 6);
+            tft.fillRect(66, 49, 14, 38, 0x0000);
+          }
           tft.fillRect(8, 111, (224-(224*(nextTransfer-millis())/transferPeriodToPrint)), 11, 0x001F);
           switch(WiFiConnectionStatus){
             case 1:
@@ -455,6 +531,7 @@ void loop() {
   
         macAddressShort=macAddress;
         macAddressShort.replace(":", "");
+        if(radSMultiplicator) radS=radS*1000;
         dataToNarodmon="#"+macAddressShort+"\n#RAD#"+String(radS)+"\n##";
 
         Serial.println("Sending:");
@@ -518,14 +595,16 @@ void loop() {
       if (focusSetting==2){
         tft.fillRect(138, 71, 46, 24, 0x001F);
         if (changeParameter){
-          sensitivity++;
-          if (sensitivity>=121) sensitivity=80;
           changeParameter=0;
+          sensitivity++;
+          if (sensitivity>125) sensitivity=85;
+          radSens.setSensitivity(sensitivity);
+          EEPROM.write(80, sensitivity);
+          EEPROM.commit();
         }
       }
       else tft.fillRect(138, 71, 46, 24, 0x0000);
       tft.drawNumber(sensitivity, 140, 72, 4);
-      radSens.setSensitivity(sensitivity);
 
       if (focusSetting==3){
         tft.fillRect(78, 104, 66, 24, 0x001F); // 00->10->01->00
@@ -598,12 +677,11 @@ void loop() {
         macAddress=WiFi.macAddress();
         WiFiConfigured=1;
 
-        Serial.println(macAddress);
         WiFi.stopSmartConfig();
         WiFi.disconnect(1,1);
         writeStringToFlash(ssid.c_str(), 0); // storing ssid at address 0
         writeStringToFlash(password.c_str(), 40); // storing pss at address 40
-        writeStringToFlash(macAddress.c_str(), 60); // storing pss at address 40
+        writeStringToFlash(macAddress.c_str(), 60); // storing pss at address 60
         delay(3000);
       }
     }
