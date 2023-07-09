@@ -307,9 +307,9 @@ void loop() {
       if (radD>=40) radReadingColor=0xFDA0;
       if (radD>=60) radReadingColor=0xF800;
 
-      if (dose<10000000) doseReadingColor=0x07E0;   //0,10Zv
-      if (dose>=10000000) doseReadingColor=0xFFE0;  //0,10Zv
-      if (dose>=25000000) doseReadingColor=0xFDA0;  //0,25Zv
+      if (dose<10000000) doseReadingColor=0x07E0; //0,10Zv
+      if (dose>=10000000) doseReadingColor=0xFFE0; //0,10Zv
+      if (dose>=25000000) doseReadingColor=0xFDA0; //0,25Zv
       if (dose>=100000000) doseReadingColor=0xF800; //1,00Zv
       
       if(readingUnitSelector) {
