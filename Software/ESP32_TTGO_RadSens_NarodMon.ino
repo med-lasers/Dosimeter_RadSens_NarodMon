@@ -4,7 +4,7 @@
 #include "CG_RadSens.h"
 #include "clipart.h"
 
-const char* firmwareVersion="3.5";
+const char* firmwareVersion="3.6";
 
 String ssid;
 String password;
@@ -69,7 +69,7 @@ CG_RadSens radSens(RS_DEFAULT_I2C_ADDRESS);
 void IRAM_ATTR buzzer() {peep=1;}
 
 void setup() {
-  pinMode(0, INPUT); // pushbutton II
+  pinMode(0, INPUT_PULLUP); // pushbutton II
   pinMode(17, INPUT_PULLUP); // pulse input from RadSens
   pinMode(27, OUTPUT); // buzzer
   pinMode(35, INPUT); // pushbutton I
